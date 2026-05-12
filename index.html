@@ -1,0 +1,1509 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SneakerStock — Sneaker Release & Resale Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bangers&family=Permanent+Marker&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #ffffff;
+    --panel: #ffffff;
+    --panel-2: #f1f5f9;
+    --text: #0f172a;
+    --muted: #64748b;
+    --border: #e2e8f0;
+    --accent-1: #2563eb;
+    --accent-2: #06b6d4;
+    --green: #16a34a;
+    --red: #dc2626;
+    --gradient: linear-gradient(135deg, #2563eb, #06b6d4);
+  }
+  .stat, .card, .table-wrap, .chart-panel, .vault-card, .mover {
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05), 0 1px 2px rgba(15, 23, 42, 0.03);
+  }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.5;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: inherit; text-decoration: none; }
+  button { font: inherit; cursor: pointer; border: none; background: none; color: inherit; }
+
+  /* Header */
+  header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+  }
+  .header-inner {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 16px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: 'Bangers', 'Impact', sans-serif;
+    font-weight: 400;
+    font-size: 28px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+  .logo-mark {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    background: var(--gradient);
+    display: grid;
+    place-items: center;
+    color: #ffffff;
+    font-family: 'Bangers', 'Impact', sans-serif;
+    font-weight: 400;
+    font-size: 24px;
+    transform: rotate(-4deg);
+    box-shadow: 2px 2px 0 rgba(15, 23, 42, 0.15);
+  }
+  nav {
+    display: flex;
+    gap: 4px;
+  }
+  nav a {
+    padding: 8px 14px;
+    border-radius: 8px;
+    color: var(--muted);
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.2s;
+  }
+  nav a:hover {
+    color: var(--text);
+    background: var(--panel);
+  }
+
+  /* Layout */
+  main {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 48px 24px 80px;
+  }
+  section { margin-bottom: 64px; }
+
+  /* Hero */
+  .hero {
+    text-align: center;
+    padding: 32px 0 16px;
+  }
+  .hero h1 {
+    font-family: 'Bangers', 'Impact', 'Arial Black', sans-serif;
+    font-size: clamp(52px, 9vw, 96px);
+    font-weight: 400;
+    letter-spacing: 3px;
+    line-height: 1.0;
+    margin-bottom: 20px;
+    text-transform: uppercase;
+    filter:
+      drop-shadow(3px 3px 0 rgba(37, 99, 235, 0.55))
+      drop-shadow(6px 6px 0 rgba(6, 182, 212, 0.35));
+  }
+  .hero h1 .grad-text {
+    -webkit-text-stroke: 1px rgba(15, 23, 42, 0.15);
+  }
+  .grad-text {
+    background: var(--gradient);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+  }
+  .hero p {
+    font-family: 'Permanent Marker', 'Comic Sans MS', cursive;
+    color: var(--text);
+    font-size: clamp(20px, 3vw, 30px);
+    max-width: 560px;
+    margin: 0 auto;
+    display: inline-block;
+    transform: rotate(-2deg);
+    letter-spacing: 0.5px;
+  }
+
+  /* Stats Bar */
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-top: 40px;
+  }
+  .stat {
+    background: var(--panel);
+    border: 2.5px solid var(--text);
+    border-radius: 14px;
+    padding: 18px 20px 16px;
+    box-shadow: 5px 5px 0 var(--accent-1);
+    transition: transform 0.2s, box-shadow 0.2s;
+    position: relative;
+  }
+  .stat:nth-child(1) { transform: rotate(-1deg); box-shadow: 5px 5px 0 var(--accent-1); }
+  .stat:nth-child(2) { transform: rotate(1deg);  box-shadow: 5px 5px 0 var(--accent-2); }
+  .stat:nth-child(3) { transform: rotate(-0.6deg); box-shadow: 5px 5px 0 var(--accent-2); }
+  .stat:nth-child(4) { transform: rotate(0.8deg);  box-shadow: 5px 5px 0 var(--accent-1); }
+  .stat:hover {
+    transform: rotate(0deg) translate(-2px, -2px);
+    box-shadow: 7px 7px 0 var(--text);
+  }
+  .stat-label {
+    color: var(--text);
+    font-family: 'Bangers', 'Impact', sans-serif;
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-bottom: 6px;
+    font-weight: 400;
+  }
+  .stat-value {
+    font-family: 'Bangers', 'Impact', sans-serif;
+    font-size: 44px;
+    font-weight: 400;
+    letter-spacing: 2px;
+    line-height: 1.05;
+    background: var(--gradient);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+  }
+
+  /* Section heading */
+  .section-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .section-header h2 {
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: -1px;
+  }
+  .section-header .sub {
+    color: var(--muted);
+    font-size: 14px;
+  }
+
+  /* Filter chips */
+  .chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 24px;
+  }
+  .chip {
+    padding: 8px 14px;
+    border-radius: 999px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-size: 13px;
+    font-weight: 600;
+    transition: all 0.2s;
+  }
+  .chip:hover {
+    color: var(--text);
+    border-color: #cbd5e1;
+  }
+  .chip.active {
+    background: var(--gradient);
+    color: #ffffff;
+    border-color: transparent;
+  }
+
+  /* Card grid */
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+  }
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 20px;
+    transition: all 0.2s;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .card:hover {
+    border-color: #cbd5e1;
+    transform: translateY(-2px);
+  }
+  .card-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .brand-tag {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    color: var(--muted);
+    text-transform: uppercase;
+  }
+  .countdown {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: rgba(37, 99, 235, 0.10);
+    color: var(--accent-1);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .countdown.released {
+    background: rgba(100, 116, 139, 0.10);
+    color: var(--muted);
+  }
+  .countdown.today {
+    background: var(--gradient);
+    color: #ffffff;
+  }
+  .countdown.imminent {
+    background: var(--gradient);
+    color: #ffffff;
+    animation: pulse 1.4s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.07); }
+  }
+  .card-top-right {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  .notify-btn {
+    background: transparent;
+    border: 2px solid var(--border);
+    color: var(--muted);
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    padding: 0;
+    flex-shrink: 0;
+  }
+  .notify-btn:hover { border-color: var(--accent-1); color: var(--accent-1); }
+  .notify-btn.active {
+    background: var(--gradient);
+    border-color: transparent;
+    color: #ffffff;
+  }
+  .notify-btn svg { width: 14px; height: 14px; }
+  .card-cta { display: flex; margin-top: 4px; }
+  .snkrs-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 10px 14px;
+    border: 2px solid var(--text);
+    border-radius: 10px;
+    background: var(--text);
+    color: #ffffff;
+    font-family: 'Bangers', 'Impact', sans-serif;
+    letter-spacing: 1.5px;
+    font-size: 14px;
+    text-transform: uppercase;
+    transition: all 0.15s;
+    box-shadow: 2px 2px 0 rgba(15, 23, 42, 0.2);
+  }
+  .snkrs-btn:hover {
+    background: var(--accent-1);
+    border-color: var(--accent-1);
+    transform: translate(-1px, -1px);
+    box-shadow: 4px 4px 0 rgba(15, 23, 42, 0.2);
+  }
+  .snkrs-btn:active {
+    transform: translate(1px, 1px);
+    box-shadow: 1px 1px 0 rgba(15, 23, 42, 0.2);
+  }
+  .shoe-art {
+    background: var(--panel-2);
+    border-radius: 12px;
+    height: 120px;
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+  }
+  .shoe-art svg { width: 80%; height: auto; }
+  .shoe-art img.shoe-img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    display: block;
+  }
+  .card-name {
+    font-weight: 700;
+    font-size: 16px;
+    letter-spacing: -0.3px;
+  }
+  .card-date {
+    color: var(--muted);
+    font-size: 13px;
+  }
+  .card-prices {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-top: 4px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border);
+  }
+  .price-block .label {
+    color: var(--muted);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 2px;
+  }
+  .price-block .value {
+    font-weight: 700;
+    font-size: 15px;
+  }
+  .card-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 13px;
+  }
+  .premium {
+    font-weight: 700;
+  }
+  .change {
+    font-weight: 600;
+    font-size: 12px;
+    padding: 3px 8px;
+    border-radius: 6px;
+  }
+  .up { color: var(--green); background: rgba(74, 222, 128, 0.1); }
+  .down { color: var(--red); background: rgba(248, 113, 113, 0.1); }
+  .flat { color: var(--muted); background: rgba(138, 138, 150, 0.1); }
+
+  /* Table */
+  .table-wrap {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  th, td {
+    text-align: left;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border);
+    font-size: 14px;
+  }
+  th {
+    background: var(--panel-2);
+    color: var(--muted);
+    font-weight: 600;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    user-select: none;
+    white-space: nowrap;
+  }
+  th:hover { color: var(--text); }
+  th .sort-ind {
+    display: inline-block;
+    margin-left: 4px;
+    opacity: 0.5;
+    font-size: 10px;
+  }
+  th.sorted .sort-ind { opacity: 1; color: var(--accent-2); }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(15, 23, 42, 0.03); }
+  .sneaker-cell {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .thumb {
+    width: 44px;
+    height: 44px;
+    border-radius: 8px;
+    background: var(--panel-2);
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+  }
+  .thumb svg { width: 80%; height: auto; }
+  .thumb img.shoe-img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    display: block;
+    border-radius: 8px;
+  }
+  .sneaker-cell .info .nm { font-weight: 600; }
+  .sneaker-cell .info .dt { color: var(--muted); font-size: 12px; }
+  .premium-cell {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 140px;
+  }
+  .bar-viz {
+    flex: 1;
+    height: 6px;
+    background: var(--panel-2);
+    border-radius: 999px;
+    overflow: hidden;
+    min-width: 50px;
+  }
+  .bar-fill {
+    height: 100%;
+    background: var(--gradient);
+    border-radius: 999px;
+  }
+
+  /* Chart */
+  .chart-tabs {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding-bottom: 8px;
+    margin-bottom: 16px;
+    scrollbar-width: thin;
+    scrollbar-color: #25252f transparent;
+  }
+  .chart-tabs::-webkit-scrollbar { height: 6px; }
+  .chart-tabs::-webkit-scrollbar-thumb { background: #25252f; border-radius: 999px; }
+  .chart-tab {
+    padding: 8px 14px;
+    border-radius: 8px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+    transition: all 0.2s;
+    flex-shrink: 0;
+  }
+  .chart-tab:hover { color: var(--text); border-color: #cbd5e1; }
+  .chart-tab.active {
+    background: var(--gradient);
+    color: #ffffff;
+    border-color: transparent;
+  }
+  .chart-panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 24px;
+  }
+  .chart-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 24px;
+    gap: 24px;
+    flex-wrap: wrap;
+  }
+  .chart-name {
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    margin-bottom: 6px;
+  }
+  .chart-meta {
+    color: var(--muted);
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .chart-stats {
+    display: flex;
+    gap: 28px;
+    align-items: flex-end;
+    flex-wrap: wrap;
+  }
+  .chart-stat .lbl {
+    color: var(--muted);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+    font-weight: 600;
+  }
+  .chart-stat .val {
+    font-size: 18px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+  }
+  .chart-stat .val.price { font-size: 28px; }
+  .chart-wrap {
+    position: relative;
+    height: 280px;
+    width: 100%;
+  }
+  .chart-wrap svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+  .chart-grid line { stroke: #e2e8f0; stroke-width: 1; stroke-dasharray: 4 4; }
+
+  /* Vault — comic steel-vault treatment */
+  #vault { position: relative; }
+  .vault-frame {
+    background:
+      repeating-linear-gradient(135deg, rgba(255,255,255,0.025) 0 2px, transparent 2px 14px),
+      linear-gradient(140deg, #1e293b 0%, #0f172a 100%);
+    border: 4px solid var(--text);
+    border-radius: 22px;
+    padding: 56px 28px 36px;
+    position: relative;
+    box-shadow: 9px 9px 0 var(--accent-1), 18px 18px 0 var(--accent-2);
+    overflow: visible;
+  }
+  /* Rivets in each corner via box-shadow on a single pseudo */
+  .vault-frame::before {
+    content: '';
+    position: absolute;
+    top: 14px;
+    left: 14px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--accent-2);
+    border: 2px solid #f8fafc;
+    box-shadow:
+      calc(100vw) 0 0 -100vw transparent,
+      0 0 0 0 var(--accent-2);
+  }
+  /* simpler: 4 corner rivets via repeating-radial-gradient on the frame itself */
+  .vault-frame::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 18px;
+    background:
+      radial-gradient(circle at 18px 18px, var(--accent-2) 4px, transparent 5px),
+      radial-gradient(circle at calc(100% - 18px) 18px, var(--accent-2) 4px, transparent 5px),
+      radial-gradient(circle at 18px calc(100% - 18px), var(--accent-2) 4px, transparent 5px),
+      radial-gradient(circle at calc(100% - 18px) calc(100% - 18px), var(--accent-2) 4px, transparent 5px);
+    pointer-events: none;
+  }
+  .vault-stamp {
+    position: absolute;
+    top: -22px;
+    right: 36px;
+    background: var(--accent-2);
+    color: var(--text);
+    padding: 8px 20px;
+    border: 3px solid var(--text);
+    border-radius: 6px;
+    font-family: 'Bangers', 'Impact', sans-serif;
+    letter-spacing: 3px;
+    font-size: 18px;
+    transform: rotate(4deg);
+    box-shadow: 4px 4px 0 var(--text);
+    z-index: 3;
+    text-transform: uppercase;
+  }
+  .vault-section-header {
+    text-align: center;
+    margin-bottom: 32px;
+    position: relative;
+    z-index: 2;
+  }
+  .vault-section-header h2 {
+    font-family: 'Bangers', 'Impact', sans-serif;
+    font-size: clamp(44px, 7vw, 76px);
+    font-weight: 400;
+    letter-spacing: 5px;
+    text-transform: uppercase;
+    color: #ffffff;
+    line-height: 1;
+    filter:
+      drop-shadow(3px 3px 0 var(--accent-1))
+      drop-shadow(6px 6px 0 var(--accent-2));
+    display: inline-block;
+    transform: rotate(-1deg);
+  }
+  .vault-section-header .vault-sub {
+    font-family: 'Permanent Marker', cursive;
+    color: rgba(255, 255, 255, 0.75);
+    font-size: 18px;
+    margin-top: 14px;
+    letter-spacing: 0.5px;
+    transform: rotate(-0.5deg);
+    display: inline-block;
+  }
+  .vault-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 18px;
+    position: relative;
+    z-index: 2;
+  }
+  .vault-card {
+    background: var(--panel);
+    border: 2.5px solid var(--text);
+    border-radius: 14px;
+    padding: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    transition: transform 0.2s, box-shadow 0.2s;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 5px 5px 0 rgba(0, 0, 0, 0.55);
+  }
+  .vault-card:nth-child(odd)  { transform: rotate(-0.6deg); }
+  .vault-card:nth-child(even) { transform: rotate(0.6deg); }
+  .vault-card:hover {
+    transform: rotate(0deg) translate(-2px, -2px);
+    box-shadow: 7px 7px 0 var(--accent-1);
+  }
+  .vault-card .top-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .vault-thumb {
+    width: 56px;
+    height: 56px;
+    border-radius: 10px;
+    background: var(--panel-2);
+    border: 2px solid var(--text);
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+  .vault-thumb img.shoe-img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    display: block;
+  }
+  .vault-thumb svg { width: 80%; height: auto; }
+  .rank-pill {
+    font-family: 'Bangers', 'Impact', sans-serif;
+    font-size: 18px;
+    font-weight: 400;
+    padding: 4px 14px;
+    border-radius: 8px;
+    background: var(--gradient);
+    color: #ffffff;
+    letter-spacing: 2px;
+    border: 2px solid var(--text);
+    box-shadow: 2px 2px 0 var(--text);
+    transform: rotate(-4deg);
+  }
+  .vault-card .price {
+    font-family: 'Bangers', 'Impact', sans-serif;
+    font-size: 34px;
+    font-weight: 400;
+    letter-spacing: 1px;
+    margin-top: 6px;
+    line-height: 1;
+  }
+  .vault-card .nm {
+    font-weight: 700;
+    font-size: 15px;
+    letter-spacing: -0.3px;
+  }
+  .vault-card .meta {
+    color: var(--muted);
+    font-size: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 2px;
+  }
+
+  /* Top movers */
+  .movers {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+  }
+  .mover {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .mover .swing {
+    font-size: 28px;
+    font-weight: 800;
+    letter-spacing: -1px;
+  }
+  .mover .nm { font-weight: 700; font-size: 15px; margin-top: 4px; }
+  .mover .meta { color: var(--muted); font-size: 12px; }
+  .mover .icon-row { display: flex; align-items: center; gap: 12px; }
+  .mover .thumb { width: 48px; height: 48px; }
+
+  /* Notice */
+  .notice {
+    background: linear-gradient(135deg, rgba(37, 99, 235, 0.06), rgba(6, 182, 212, 0.04));
+    border: 1px solid rgba(37, 99, 235, 0.18);
+    border-radius: 16px;
+    padding: 20px 24px;
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+    margin-top: 16px;
+  }
+  .notice-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: var(--gradient);
+    color: #ffffff;
+    display: grid;
+    place-items: center;
+    font-weight: 900;
+    flex-shrink: 0;
+  }
+  .notice h3 {
+    font-size: 15px;
+    margin-bottom: 4px;
+    font-weight: 700;
+  }
+  .notice p {
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.6;
+  }
+  .notice code {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 12px;
+    color: var(--accent-2);
+  }
+
+  /* Footer */
+  footer {
+    text-align: center;
+    color: var(--muted);
+    font-size: 13px;
+    padding: 32px 24px;
+    border-top: 1px solid var(--border);
+  }
+
+  /* Mobile */
+  @media (max-width: 768px) {
+    .header-inner { padding: 14px 16px; }
+    main { padding: 32px 16px 64px; }
+    nav { display: none; }
+    .stats { grid-template-columns: repeat(2, 1fr); }
+    .movers { grid-template-columns: repeat(2, 1fr); }
+    .vault-grid { grid-template-columns: repeat(2, 1fr); }
+    .vault-frame { padding: 44px 16px 24px; box-shadow: 6px 6px 0 var(--accent-1), 12px 12px 0 var(--accent-2); }
+    .vault-stamp { right: 16px; font-size: 14px; padding: 6px 14px; }
+    .chart-wrap { height: 220px; }
+    .chart-stats { gap: 18px; }
+    .chart-stat .val.price { font-size: 22px; }
+    th.hide-mobile, td.hide-mobile { display: none; }
+    th, td { padding: 12px 10px; font-size: 13px; }
+    .stat-value { font-size: 22px; }
+    section { margin-bottom: 48px; }
+  }
+  @media (max-width: 480px) {
+    .stats { grid-template-columns: 1fr 1fr; }
+    .movers { grid-template-columns: 1fr; }
+    .vault-grid { grid-template-columns: 1fr; }
+    .hero h1 { font-size: 36px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <div class="logo">
+      <div class="logo-mark">S</div>
+      <span>SneakerStock</span>
+    </div>
+    <nav>
+      <a href="#vault">Vault</a>
+      <a href="#chart">Chart</a>
+      <a href="#upcoming">Upcoming</a>
+      <a href="#tracker">Value Tracker</a>
+      <a href="#movers">Top Movers</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <section class="hero">
+    <h1>Track every <span class="grad-text">drop</span>.<br>Watch every <span class="grad-text">dollar</span>.</h1>
+    <p>But just don't crease 'em.</p>
+    <div class="stats" id="stats">
+      <div class="stat"><div class="stat-label">Upcoming Drops</div><div class="stat-value" id="stat-upcoming">—</div></div>
+      <div class="stat"><div class="stat-label">Avg Resale Premium</div><div class="stat-value" id="stat-premium">—</div></div>
+      <div class="stat"><div class="stat-label">Models Tracked</div><div class="stat-value" id="stat-tracked">—</div></div>
+      <div class="stat"><div class="stat-label">Big Movers (7d)</div><div class="stat-value" id="stat-movers">—</div></div>
+    </div>
+  </section>
+
+  <section id="vault">
+    <div class="vault-frame">
+      <div class="vault-stamp">★ Top Tier ★</div>
+      <div class="vault-section-header">
+        <h2>The Vault</h2>
+        <div class="vault-sub">Top-grade grails locked in</div>
+      </div>
+      <div class="vault-grid" id="vault-grid"></div>
+    </div>
+  </section>
+
+  <section id="chart">
+    <div class="section-header">
+      <h2>Price History</h2>
+      <div class="sub">60-day resale trend · click a ticker to switch</div>
+    </div>
+    <div class="chart-tabs" id="chart-tabs"></div>
+    <div class="chart-panel">
+      <div class="chart-header">
+        <div>
+          <div class="chart-name" id="chart-name">—</div>
+          <div class="chart-meta" id="chart-meta">—</div>
+        </div>
+        <div class="chart-stats" id="chart-stats"></div>
+      </div>
+      <div class="chart-wrap" id="chart-wrap"></div>
+    </div>
+  </section>
+
+  <section id="upcoming">
+    <div class="section-header">
+      <h2>Upcoming Releases</h2>
+      <div class="sub">Filter by brand to narrow the calendar</div>
+    </div>
+    <div class="chips" id="chips"></div>
+    <div class="grid" id="release-grid"></div>
+  </section>
+
+  <section id="tracker">
+    <div class="section-header">
+      <h2>Resale Value Tracker</h2>
+      <div class="sub">Click a column to sort</div>
+    </div>
+    <div class="table-wrap">
+      <table id="tracker-table">
+        <thead>
+          <tr>
+            <th data-key="name">Sneaker <span class="sort-ind">↕</span></th>
+            <th data-key="brand" class="hide-mobile">Brand <span class="sort-ind">↕</span></th>
+            <th data-key="retail" class="hide-mobile">Retail <span class="sort-ind">↕</span></th>
+            <th data-key="resale">Resale <span class="sort-ind">↕</span></th>
+            <th data-key="premium">Premium <span class="sort-ind">↕</span></th>
+            <th data-key="change">7d <span class="sort-ind">↕</span></th>
+          </tr>
+        </thead>
+        <tbody id="tracker-body"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="movers">
+    <div class="section-header">
+      <h2>Top Movers</h2>
+      <div class="sub">Biggest 7-day swings in resale</div>
+    </div>
+    <div class="movers" id="movers-grid"></div>
+  </section>
+
+  <section id="notice-section">
+    <div class="notice">
+      <div class="notice-icon">i</div>
+      <div>
+        <h3>About this data</h3>
+        <p><strong>Sample data — edit it yourself.</strong> When a drop is announced, paste a new entry into the <code>SNEAKERS</code> array in the JS. Each shoe takes a name, brand, release date, retail price, resale estimate, prior-week price, and an optional <code>image</code> URL. That's the whole workflow — no API key, no backend.</p>
+        <p style="margin-top: 10px;">Countdowns tick live (assumes 10 AM drop time), the bell opts you into browser notifications while this page is open, and "Buy on SNKRS" deep-links Nike/Jordan drops to <code>nike.com/launch</code>.</p>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  SneakerStock — built for the culture. Data shown is illustrative.
+</footer>
+
+<script>
+const TODAY = new Date('2026-05-11');
+
+// Brand palette for SVG accents
+const BRAND_COLORS = {
+  'Nike':        '#ff5a1f',
+  'Jordan':      '#e60023',
+  'Adidas':      '#ffffff',
+  'New Balance': '#9ca3af',
+  'Reebok':      '#3b82f6',
+  'Converse':    '#fbbf24',
+  'Puma':        '#22c55e',
+  'Asics':       '#a78bfa'
+};
+
+// Fallback sample data — gets replaced at runtime by fetch('sneakers.json')
+let SNEAKERS = [
+  { id: 1,  name: 'Air Jordan 1 High "Chicago Lost & Found"', brand: 'Jordan',      releaseDate: '2026-06-14', retail: 180, resale: 420, prev: 380, color: '#e60023', upcoming: true,  image: 'https://static.nike.com/a/images/f_auto/dpr_2.0,cs_srgb/w_475,c_limit/89c121fc-3d07-4de0-aef6-bcc9c2764a2c/air-jordan-1-2022-lost-and-found-chicago-the-inspiration-behind-the-design.jpg' },
+  { id: 2,  name: 'Nike Dunk Low "Panda"',                   brand: 'Nike',        releaseDate: '2026-04-20', retail: 110, resale: 165, prev: 175, color: '#f5f5f7', upcoming: false, image: '' },
+  { id: 3,  name: 'Adidas Samba OG "Cloud White"',           brand: 'Adidas',      releaseDate: '2026-05-11', retail: 100, resale: 140, prev: 120, color: '#ffffff', upcoming: true,  image: '' },
+  { id: 4,  name: 'New Balance 990v6 "Grey Day"',            brand: 'New Balance', releaseDate: '2026-05-25', retail: 200, resale: 285, prev: 270, color: '#9ca3af', upcoming: true,  image: '' },
+  { id: 5,  name: 'Air Jordan 4 "Bred Reimagined"',          brand: 'Jordan',      releaseDate: '2026-02-17', retail: 215, resale: 360, prev: 340, color: '#1a1a1a', upcoming: false, image: '' },
+  { id: 6,  name: 'Nike Air Max 1 "Patta Waves"',            brand: 'Nike',        releaseDate: '2026-06-01', retail: 170, resale: 295, prev: 320, color: '#ff5a1f', upcoming: true,  image: '' },
+  { id: 7,  name: 'Yeezy Boost 350 V2 "Onyx"',               brand: 'Adidas',      releaseDate: '2026-03-10', retail: 230, resale: 245, prev: 260, color: '#2a2a2a', upcoming: false, image: '' },
+  { id: 8,  name: 'Reebok Club C 85 "Vintage"',              brand: 'Reebok',      releaseDate: '2026-05-30', retail: 85,  resale: 110, prev: 105, color: '#3b82f6', upcoming: true,  image: '' },
+  { id: 9,  name: 'Converse Chuck 70 "Comme des Garçons"',   brand: 'Converse',    releaseDate: '2026-07-08', retail: 130, resale: 220, prev: 195, color: '#fbbf24', upcoming: true,  image: '' },
+  { id: 10, name: 'Puma Suede Classic "MMQ"',                brand: 'Puma',        releaseDate: '2026-04-02', retail: 90,  resale: 115, prev: 130, color: '#22c55e', upcoming: false, image: '' },
+  { id: 11, name: 'Asics Gel-Kayano 14 "Cream Black"',       brand: 'Asics',       releaseDate: '2026-05-18', retail: 160, resale: 240, prev: 210, color: '#a78bfa', upcoming: true,  image: '' },
+  { id: 12, name: 'Nike SB Dunk Low "Pigeon 25th"',          brand: 'Nike',        releaseDate: '2026-08-15', retail: 130, resale: 580, prev: 510, color: '#a3a3a3', upcoming: true,  image: '' },
+  { id: 13, name: 'Air Jordan 11 "Cherry"',                  brand: 'Jordan',      releaseDate: '2026-12-10', retail: 225, resale: 340, prev: 335, color: '#e60023', upcoming: true,  image: '' },
+  { id: 14, name: 'New Balance 1906R "Protection Pack"',     brand: 'New Balance', releaseDate: '2026-01-22', retail: 165, resale: 220, prev: 250, color: '#6b7280', upcoming: false, image: '' },
+  { id: 15, name: 'Adidas Gazelle Bold "Pink Glow"',         brand: 'Adidas',      releaseDate: '2026-06-22', retail: 120, resale: 175, prev: 160, color: '#f472b6', upcoming: true,  image: '' }
+];
+
+// --- Helpers ---
+const fmt$ = n => '$' + n.toLocaleString();
+const pct = n => (n >= 0 ? '+' : '') + n.toFixed(1) + '%';
+const dateFmt = d => new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+function premium(s) { return ((s.resale - s.retail) / s.retail) * 100; }
+function change7d(s) { return ((s.resale - s.prev) / s.prev) * 100; }
+function changeAbs(s) { return s.resale - s.prev; }
+function getReleaseTime(s) {
+  // SNKRS drops conventionally hit at 10:00 AM local time
+  return new Date(s.releaseDate + 'T10:00:00').getTime();
+}
+function daysTo(dateStr) {
+  return Math.floor((new Date(dateStr + 'T10:00:00').getTime() - Date.now()) / 86400000);
+}
+function formatCountdown(s) {
+  const diff = getReleaseTime(s) - Date.now();
+  if (diff <= -86400000) return { text: 'Released', cls: 'released' };
+  if (diff <= 0) return { text: 'Dropped Today', cls: 'today' };
+  const days = Math.floor(diff / 86400000);
+  const hours = Math.floor((diff % 86400000) / 3600000);
+  const mins = Math.floor((diff % 3600000) / 60000);
+  const secs = Math.floor((diff % 60000) / 1000);
+  const pad = n => n.toString().padStart(2, '0');
+  if (days >= 7) return { text: `${days} days`, cls: '' };
+  if (days >= 1) return { text: `${days}d ${hours}h ${mins}m`, cls: '' };
+  return { text: `${pad(hours)}:${pad(mins)}:${pad(secs)}`, cls: 'imminent' };
+}
+
+// Inline sneaker SVG, accent color per shoe
+function sneakerSVG(color) {
+  return `<svg viewBox="0 0 200 100" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="g${color.replace('#','')}" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stop-color="${color}" stop-opacity="0.95"/>
+        <stop offset="100%" stop-color="${color}" stop-opacity="0.6"/>
+      </linearGradient>
+    </defs>
+    <!-- sole -->
+    <path d="M10 75 Q12 88 28 88 L172 88 Q188 88 188 78 L188 72 L10 72 Z" fill="#2a2a35"/>
+    <!-- midsole -->
+    <path d="M10 72 L188 72 L185 65 L15 65 Z" fill="#3a3a48"/>
+    <!-- upper body -->
+    <path d="M15 65 Q15 35 55 28 Q85 22 110 30 L150 42 Q175 48 180 58 L185 65 Z" fill="url(#g${color.replace('#','')})"/>
+    <!-- toe box highlight -->
+    <path d="M150 42 Q170 46 178 56 L182 62 L155 56 Z" fill="${color}" opacity="0.4"/>
+    <!-- swoosh / accent stripe -->
+    <path d="M50 55 Q80 38 130 48" stroke="#0b0b0f" stroke-width="3" fill="none" stroke-linecap="round" opacity="0.4"/>
+    <!-- collar -->
+    <path d="M30 50 Q35 30 60 26 L70 38 Q50 42 38 55 Z" fill="#1a1a22" opacity="0.5"/>
+    <!-- laces -->
+    <line x1="65" y1="38" x2="105" y2="44" stroke="#f5f5f7" stroke-width="1.5" opacity="0.6"/>
+    <line x1="68" y1="44" x2="108" y2="50" stroke="#f5f5f7" stroke-width="1.5" opacity="0.6"/>
+    <line x1="71" y1="50" x2="111" y2="56" stroke="#f5f5f7" stroke-width="1.5" opacity="0.6"/>
+  </svg>`;
+}
+
+function shoeArt(s) {
+  if (!s.image) return sneakerSVG(s.color);
+  const safeAlt = s.name.replace(/"/g, '&quot;');
+  return `<img class="shoe-img" src="${s.image}" alt="${safeAlt}" loading="lazy" onerror="this.outerHTML = sneakerSVG('${s.color}')">`;
+}
+
+function countdownBadge(s) {
+  const c = formatCountdown(s);
+  return `<span class="countdown ${c.cls}" data-countdown="${s.id}">${c.text}</span>`;
+}
+
+function buyLink(s) {
+  const q = encodeURIComponent(s.name.replace(/"/g, ''));
+  const upcoming = (getReleaseTime(s) - Date.now()) > 0;
+  const isNike = s.brand === 'Nike' || s.brand === 'Jordan';
+  if (upcoming && isNike) {
+    return { url: `https://www.nike.com/launch?search=${q}`, label: 'Buy on SNKRS' };
+  }
+  return { url: `https://stockx.com/search?s=${q}`, label: 'View on StockX' };
+}
+
+const BELL_SVG = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a7 7 0 0 0-7 7v3.586l-1.707 1.707A1 1 0 0 0 4 16h16a1 1 0 0 0 .707-1.707L19 12.586V9a7 7 0 0 0-7-7zm-2.5 16a2.5 2.5 0 0 0 5 0h-5z"/></svg>';
+
+let notifiedShoes = [];
+let notifiedFired = {};
+try {
+  notifiedShoes = JSON.parse(localStorage.getItem('snk_notify') || '[]');
+  notifiedFired = JSON.parse(localStorage.getItem('snk_notify_fired') || '{}');
+} catch (e) {}
+
+async function toggleNotify(id) {
+  if (typeof Notification === 'undefined') {
+    alert("This browser doesn't support notifications.");
+    return;
+  }
+  if (Notification.permission === 'denied') {
+    alert("Notifications are blocked. Enable them in your browser's site settings for this page.");
+    return;
+  }
+  if (Notification.permission === 'default') {
+    const perm = await Notification.requestPermission();
+    if (perm !== 'granted') return;
+  }
+  const s = SNEAKERS.find(x => x.id === id);
+  if (!s) return;
+  const idx = notifiedShoes.indexOf(id);
+  if (idx >= 0) {
+    notifiedShoes.splice(idx, 1);
+  } else {
+    notifiedShoes.push(id);
+    try {
+      new Notification('Tracking ' + s.name.replace(/"/g, ''), {
+        body: "You'll be alerted before this drops.",
+        tag: 'snk-track-' + id
+      });
+    } catch (e) {}
+  }
+  localStorage.setItem('snk_notify', JSON.stringify(notifiedShoes));
+  renderReleases();
+}
+
+function updateCountdowns() {
+  document.querySelectorAll('[data-countdown]').forEach(el => {
+    const id = parseInt(el.dataset.countdown, 10);
+    const s = SNEAKERS.find(x => x.id === id);
+    if (!s) return;
+    const c = formatCountdown(s);
+    if (el.textContent !== c.text) el.textContent = c.text;
+    const desired = 'countdown ' + c.cls;
+    if (el.className !== desired) el.className = desired;
+  });
+}
+
+function checkNotifications() {
+  if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
+  const now = Date.now();
+  const buckets = [
+    { key: '1h', threshold: 3600000, label: 'in 1 hour' },
+    { key: '5m', threshold: 300000, label: 'in 5 minutes' },
+    { key: '0', threshold: 0, label: 'NOW' }
+  ];
+  notifiedShoes.forEach(id => {
+    const s = SNEAKERS.find(x => x.id === id);
+    if (!s) return;
+    const diff = getReleaseTime(s) - now;
+    buckets.forEach(b => {
+      const fireKey = id + '-' + b.key;
+      if (diff <= b.threshold && diff > b.threshold - 30000 && !notifiedFired[fireKey]) {
+        try {
+          new Notification(s.brand + ' drop ' + b.label + '!', {
+            body: s.name.replace(/"/g, ''),
+            tag: fireKey
+          });
+        } catch (e) {}
+        notifiedFired[fireKey] = true;
+        localStorage.setItem('snk_notify_fired', JSON.stringify(notifiedFired));
+      }
+    });
+  });
+}
+
+function changeChip(s) {
+  const c = change7d(s);
+  const cls = c > 0.5 ? 'up' : c < -0.5 ? 'down' : 'flat';
+  const arrow = c > 0.5 ? '▲' : c < -0.5 ? '▼' : '◆';
+  return `<span class="change ${cls}">${arrow} ${pct(c)}</span>`;
+}
+
+// --- Stats bar ---
+function renderStats() {
+  const upcomingCount = SNEAKERS.filter(s => getReleaseTime(s) > Date.now()).length;
+  const avgPrem = SNEAKERS.reduce((a, s) => a + premium(s), 0) / SNEAKERS.length;
+  const tracked = SNEAKERS.length;
+  const bigMovers = SNEAKERS.filter(s => Math.abs(change7d(s)) >= 8).length;
+  document.getElementById('stat-upcoming').textContent = upcomingCount;
+  document.getElementById('stat-premium').textContent = pct(avgPrem);
+  document.getElementById('stat-tracked').textContent = tracked;
+  document.getElementById('stat-movers').textContent = bigMovers;
+}
+
+// --- Brand chips ---
+const BRANDS = ['All', 'Nike', 'Jordan', 'Adidas', 'New Balance', 'Reebok', 'Converse', 'Puma', 'Asics'];
+let activeBrand = 'All';
+
+function renderChips() {
+  const c = document.getElementById('chips');
+  c.innerHTML = BRANDS.map(b =>
+    `<button class="chip ${b === activeBrand ? 'active' : ''}" data-brand="${b}">${b}</button>`
+  ).join('');
+  c.querySelectorAll('.chip').forEach(btn => {
+    btn.addEventListener('click', () => {
+      activeBrand = btn.dataset.brand;
+      renderChips();
+      renderReleases();
+    });
+  });
+}
+
+// --- Release cards ---
+function renderReleases() {
+  const grid = document.getElementById('release-grid');
+  let items = activeBrand === 'All' ? SNEAKERS.slice() : SNEAKERS.filter(s => s.brand === activeBrand);
+  // Sort by upcoming first (closest drop first), then released most-recent
+  items.sort((a, b) => {
+    const da = daysTo(a.releaseDate), db = daysTo(b.releaseDate);
+    if (da >= 0 && db >= 0) return da - db;
+    if (da >= 0) return -1;
+    if (db >= 0) return 1;
+    return db - da;
+  });
+  grid.innerHTML = items.map(s => {
+    const link = buyLink(s);
+    const bellOn = notifiedShoes.includes(s.id);
+    return `
+    <article class="card">
+      <div class="card-top">
+        <span class="brand-tag">${s.brand}</span>
+        <div class="card-top-right">
+          ${countdownBadge(s)}
+          <button class="notify-btn ${bellOn ? 'active' : ''}" data-notify="${s.id}" title="${bellOn ? 'Stop tracking' : 'Notify me before drop'}" aria-label="Toggle drop notification">${BELL_SVG}</button>
+        </div>
+      </div>
+      <div class="shoe-art">${shoeArt(s)}</div>
+      <div>
+        <div class="card-name">${s.name}</div>
+        <div class="card-date">${dateFmt(s.releaseDate)} · 10:00 AM</div>
+      </div>
+      <div class="card-prices">
+        <div class="price-block">
+          <div class="label">Retail</div>
+          <div class="value">${fmt$(s.retail)}</div>
+        </div>
+        <div class="price-block">
+          <div class="label">Est. Resale</div>
+          <div class="value">${fmt$(s.resale)}</div>
+        </div>
+      </div>
+      <div class="card-meta">
+        <span class="premium grad-text">${pct(premium(s))} premium</span>
+        ${changeChip(s)}
+      </div>
+      <div class="card-cta">
+        <a class="snkrs-btn" href="${link.url}" target="_blank" rel="noopener noreferrer">${link.label} →</a>
+      </div>
+    </article>
+  `;}).join('');
+  if (!items.length) {
+    grid.innerHTML = `<div style="grid-column: 1/-1; color: var(--muted); text-align:center; padding: 40px;">No ${activeBrand} releases tracked yet.</div>`;
+  }
+}
+
+// --- Table ---
+let sortKey = 'premium';
+let sortDir = -1; // -1 desc, 1 asc
+
+function renderTable() {
+  const body = document.getElementById('tracker-body');
+  const items = SNEAKERS.slice().sort((a, b) => {
+    let va, vb;
+    switch (sortKey) {
+      case 'name':    va = a.name; vb = b.name; break;
+      case 'brand':   va = a.brand; vb = b.brand; break;
+      case 'retail':  va = a.retail; vb = b.retail; break;
+      case 'resale':  va = a.resale; vb = b.resale; break;
+      case 'premium': va = premium(a); vb = premium(b); break;
+      case 'change':  va = change7d(a); vb = change7d(b); break;
+    }
+    if (typeof va === 'string') return sortDir * va.localeCompare(vb);
+    return sortDir * (va - vb);
+  });
+  const maxPrem = Math.max(...SNEAKERS.map(premium));
+  body.innerHTML = items.map(s => {
+    const prem = premium(s);
+    const barW = Math.max(4, (prem / maxPrem) * 100);
+    return `<tr>
+      <td>
+        <div class="sneaker-cell">
+          <div class="thumb">${shoeArt(s)}</div>
+          <div class="info">
+            <div class="nm">${s.name}</div>
+            <div class="dt">${dateFmt(s.releaseDate)}</div>
+          </div>
+        </div>
+      </td>
+      <td class="hide-mobile">${s.brand}</td>
+      <td class="hide-mobile">${fmt$(s.retail)}</td>
+      <td><strong>${fmt$(s.resale)}</strong></td>
+      <td>
+        <div class="premium-cell">
+          <div class="bar-viz"><div class="bar-fill" style="width:${barW}%"></div></div>
+          <span class="grad-text" style="font-weight:700; min-width:50px; text-align:right;">${pct(prem)}</span>
+        </div>
+      </td>
+      <td>${changeChip(s)}</td>
+    </tr>`;
+  }).join('');
+
+  // Header sort indicators
+  document.querySelectorAll('#tracker-table th').forEach(th => {
+    th.classList.toggle('sorted', th.dataset.key === sortKey);
+    const ind = th.querySelector('.sort-ind');
+    if (th.dataset.key === sortKey) {
+      ind.textContent = sortDir === -1 ? '▼' : '▲';
+    } else {
+      ind.textContent = '↕';
+    }
+  });
+}
+
+document.querySelectorAll('#tracker-table th').forEach(th => {
+  th.addEventListener('click', () => {
+    const k = th.dataset.key;
+    if (sortKey === k) sortDir = -sortDir;
+    else { sortKey = k; sortDir = (k === 'name' || k === 'brand') ? 1 : -1; }
+    renderTable();
+  });
+});
+
+// --- Chart ---
+function mulberry32(seed) {
+  return function() {
+    let t = seed += 0x6D2B79F5;
+    t = Math.imul(t ^ t >>> 15, t | 1);
+    t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+
+function genHistory(s) {
+  const days = 60;
+  const rand = mulberry32(s.id * 9973 + 7);
+  // Walk from a randomized starting point toward current resale, with noise
+  let val = s.retail * (1.05 + rand() * 0.45);
+  const out = [];
+  for (let i = 0; i < days; i++) {
+    const drift = (s.resale - val) * 0.04;
+    const noise = (rand() - 0.5) * s.resale * 0.045;
+    val = val + drift + noise;
+    if (val < s.retail * 0.85) val = s.retail * 0.85;
+    out.push(val);
+  }
+  // Pin recent values to known data so chart aligns with table/cards
+  out[days - 8] = s.prev;
+  out[days - 1] = s.resale;
+  return out;
+}
+
+let chartSel = 1; // sneaker id
+
+function renderChartTabs() {
+  const c = document.getElementById('chart-tabs');
+  c.innerHTML = SNEAKERS.map(s => {
+    const short = s.name.replace(/"/g, '').replace(/ \(.+\)$/, '');
+    return `<button class="chart-tab ${s.id === chartSel ? 'active' : ''}" data-id="${s.id}">${short}</button>`;
+  }).join('');
+  c.querySelectorAll('.chart-tab').forEach(btn => {
+    btn.addEventListener('click', () => {
+      chartSel = parseInt(btn.dataset.id, 10);
+      renderChartTabs();
+      renderChart();
+    });
+  });
+}
+
+function renderChart() {
+  const s = SNEAKERS.find(x => x.id === chartSel) || SNEAKERS[0];
+  const hist = genHistory(s);
+  const lo = Math.min(...hist);
+  const hi = Math.max(...hist);
+  const range = (hi - lo) || 1;
+  const W = 1000, H = 280, padX = 8, padY = 20;
+  const stepX = (W - padX * 2) / (hist.length - 1);
+
+  const points = hist.map((v, i) => {
+    const x = padX + i * stepX;
+    const y = padY + (H - padY * 2) * (1 - (v - lo) / range);
+    return [x, y];
+  });
+
+  const lineD = 'M ' + points.map(p => `${p[0].toFixed(1)},${p[1].toFixed(1)}`).join(' L ');
+  const areaD = lineD + ` L ${points[points.length - 1][0]},${H} L ${points[0][0]},${H} Z`;
+
+  const first = hist[0], last = hist[hist.length - 1];
+  const change = ((last - first) / first) * 100;
+  const cls = change > 0.5 ? 'up' : change < -0.5 ? 'down' : 'flat';
+  const arrow = cls === 'up' ? '▲' : cls === 'down' ? '▼' : '◆';
+
+  document.getElementById('chart-name').textContent = s.name;
+  document.getElementById('chart-meta').innerHTML = `<span class="brand-tag">${s.brand}</span> · Released ${dateFmt(s.releaseDate)}`;
+  document.getElementById('chart-stats').innerHTML = `
+    <div class="chart-stat">
+      <div class="lbl">Current</div>
+      <div class="val price grad-text">${fmt$(Math.round(last))}</div>
+    </div>
+    <div class="chart-stat">
+      <div class="lbl">60d Change</div>
+      <div class="val" style="${cls === 'up' ? 'color:var(--green)' : cls === 'down' ? 'color:var(--red)' : 'color:var(--muted)'}">${arrow} ${pct(change)}</div>
+    </div>
+    <div class="chart-stat">
+      <div class="lbl">60d Low</div>
+      <div class="val">${fmt$(Math.round(lo))}</div>
+    </div>
+    <div class="chart-stat">
+      <div class="lbl">60d High</div>
+      <div class="val">${fmt$(Math.round(hi))}</div>
+    </div>
+  `;
+
+  document.getElementById('chart-wrap').innerHTML = `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
+    <defs>
+      <linearGradient id="chartFill" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#2563eb" stop-opacity="0.4"/>
+        <stop offset="100%" stop-color="#06b6d4" stop-opacity="0"/>
+      </linearGradient>
+      <linearGradient id="chartStroke" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0%" stop-color="#2563eb"/>
+        <stop offset="100%" stop-color="#06b6d4"/>
+      </linearGradient>
+    </defs>
+    <g class="chart-grid">
+      <line x1="${padX}" y1="${H * 0.25}" x2="${W - padX}" y2="${H * 0.25}"/>
+      <line x1="${padX}" y1="${H * 0.5}"  x2="${W - padX}" y2="${H * 0.5}"/>
+      <line x1="${padX}" y1="${H * 0.75}" x2="${W - padX}" y2="${H * 0.75}"/>
+    </g>
+    <path d="${areaD}" fill="url(#chartFill)"/>
+    <path d="${lineD}" fill="none" stroke="url(#chartStroke)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>
+  </svg>`;
+}
+
+// --- Vault (most valuable) ---
+function renderVault() {
+  const sorted = SNEAKERS.slice().sort((a, b) => b.resale - a.resale).slice(0, 6);
+  const grid = document.getElementById('vault-grid');
+  grid.innerHTML = sorted.map((s, i) => `
+    <div class="vault-card">
+      <div class="top-row">
+        <div class="vault-thumb">${shoeArt(s)}</div>
+        <div class="rank-pill">#${i + 1}</div>
+      </div>
+      <div class="price grad-text">${fmt$(s.resale)}</div>
+      <div class="nm">${s.name}</div>
+      <div class="meta">
+        <span class="brand-tag">${s.brand}</span>
+        <span>${pct(premium(s))} premium</span>
+      </div>
+    </div>
+  `).join('');
+}
+
+// --- Top Movers ---
+function renderMovers() {
+  const sorted = SNEAKERS.slice().sort((a, b) => Math.abs(changeAbs(b)) - Math.abs(changeAbs(a))).slice(0, 4);
+  const grid = document.getElementById('movers-grid');
+  grid.innerHTML = sorted.map(s => {
+    const swing = changeAbs(s);
+    const cls = swing > 0 ? 'up' : 'down';
+    const arrow = swing > 0 ? '▲' : '▼';
+    return `<div class="mover">
+      <div class="icon-row">
+        <div class="thumb">${shoeArt(s)}</div>
+        <div>
+          <div class="brand-tag">${s.brand}</div>
+          <span class="change ${cls}" style="margin-top:4px; display:inline-block;">${arrow} ${pct(change7d(s))}</span>
+        </div>
+      </div>
+      <div class="swing ${cls === 'up' ? 'grad-text' : ''}" style="${cls === 'down' ? 'color:var(--red)' : ''}">${swing >= 0 ? '+' : '−'}${fmt$(Math.abs(swing))}</div>
+      <div class="nm">${s.name}</div>
+      <div class="meta">${fmt$(s.prev)} → ${fmt$(s.resale)}</div>
+    </div>`;
+  }).join('');
+}
+
+// --- Init ---
+(async function init() {
+  try {
+    const res = await fetch('sneakers.json', { cache: 'no-cache' });
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data) && data.length) SNEAKERS = data;
+    }
+  } catch (e) {
+    console.warn('sneakers.json fetch failed, using inline fallback', e);
+  }
+  renderStats();
+  renderChartTabs();
+  renderChart();
+  renderChips();
+  renderReleases();
+  renderTable();
+  renderVault();
+  renderMovers();
+  setInterval(() => {
+    updateCountdowns();
+    checkNotifications();
+  }, 1000);
+})();
+
+// Bell button click (event delegation so it survives re-renders)
+document.addEventListener('click', (e) => {
+  const btn = e.target.closest('[data-notify]');
+  if (btn) {
+    e.preventDefault();
+    toggleNotify(parseInt(btn.dataset.notify, 10));
+  }
+});
+</script>
+
+</body>
+</html>

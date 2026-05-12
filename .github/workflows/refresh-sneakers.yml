@@ -1,0 +1,39 @@
+name: Refresh sneaker data
+
+on:
+  schedule:
+    - cron: '0 8 * * *'   # daily at 08:00 UTC
+  workflow_dispatch:        # manual run button in the Actions tab
+
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm install --omit=dev
+
+      - name: Refresh sneakers.json
+        run: node scripts/refresh.js
+
+      - name: Commit if changed
+        run: |
+          git config user.name "sneakerstock-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add sneakers.json
+          if git diff --staged --quiet; then
+            echo "No changes to commit."
+          else
+            git commit -m "data: refresh sneakers.json"
+            git push
+          fi
