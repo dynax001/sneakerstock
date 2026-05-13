@@ -14,6 +14,8 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Node
         uses: actions/setup-node@v4
@@ -29,7 +31,7 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           cp sneakers.json /tmp/sneakers_fresh.json
           git fetch origin main
-          git reset --hard origin/main
+          git reset --hard FETCH_HEAD
           cp /tmp/sneakers_fresh.json sneakers.json
           git add sneakers.json
           if git diff --staged --quiet; then
