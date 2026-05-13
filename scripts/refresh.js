@@ -1,17 +1,15 @@
-// Fetches fresh sneaker data and writes sneakers.json.
-// Default source: Sneaks-API (open source, no key, scrapes Flight Club / StockX / GOAT).
-// To swap providers, replace fetchFromSneaksAPI() with another adapter that
-// returns the same shape (see SHOE_SHAPE below).
+// Fetches sneaker release data from Sneaker News RSS feed and writes sneakers.json.
+// No npm dependencies — uses Node 18+ built-in fetch.
+// Resale prices are estimated (retail * multiplier) until RapidAPI adapter is added.
 
 const fs = require('fs');
 const path = require('path');
-const SneaksAPI = require('sneaks-api');
 
-const COUNT = 20;            // how many shoes to pull
-const FETCH_PRICES = true;   // set false to skip per-shoe price calls
+const RSS_URL = 'https://sneakernews.com/category/release-dates/feed/';
+const COUNT = 20;
 const OUTPUT = path.join(__dirname, '..', 'sneakers.json');
 
-const COLORS = {
+const BRAND_COLORS = {
   Nike:          '#ff5a1f',
   Jordan:        '#e60023',
   Adidas:        '#f5f5f7',
@@ -22,80 +20,106 @@ const COLORS = {
   Asics:         '#a78bfa'
 };
 
-function detectBrand(rawBrand, name = '') {
-  const s = ((rawBrand || '') + ' ' + name).toLowerCase();
-  if (s.includes('jordan')) return 'Jordan';
-  if (s.includes('yeezy') || s.includes('adidas')) return 'Adidas';
-  if (s.includes('new balance')) return 'New Balance';
-  if (s.includes('reebok')) return 'Reebok';
-  if (s.includes('converse')) return 'Converse';
-  if (s.includes('puma')) return 'Puma';
-  if (s.includes('asics')) return 'Asics';
+const RETAIL_ESTIMATES = {
+  Nike: 150, Jordan: 190, Adidas: 140, 'New Balance': 130,
+  Reebok: 110, Converse: 85, Puma: 110, Asics: 120
+};
+
+function detectBrand(text) {
+  const s = (text || '').toLowerCase();
+  if (s.includes('jordan') || s.includes('air jordan')) return 'Jordan';
+  if (s.includes('yeezy') || s.includes('adidas'))      return 'Adidas';
+  if (s.includes('new balance'))                         return 'New Balance';
+  if (s.includes('reebok'))                              return 'Reebok';
+  if (s.includes('converse') || s.includes('chuck'))    return 'Converse';
+  if (s.includes('puma'))                                return 'Puma';
+  if (s.includes('asics') || s.includes('gel-'))        return 'Asics';
   return 'Nike';
 }
 
-// --- Adapter: Sneaks-API ---
-function fetchFromSneaksAPI(count) {
-  const sneaks = new SneaksAPI();
-  return new Promise((resolve, reject) => {
-    sneaks.getMostPopular(count, (err, products) => {
-      if (err) return reject(err);
-      resolve({ sneaks, products: products || [] });
-    });
+function extractTag(xml, tag) {
+  const m = xml.match(new RegExp(`<${tag}[^>]*><!\\[CDATA\\[([\\s\\S]*?)\\]\\]><\\/${tag}>`, 'i'))
+    || xml.match(new RegExp(`<${tag}[^>]*>([\\s\\S]*?)<\\/${tag}>`, 'i'));
+  return m ? m[1].trim() : '';
+}
+
+function extractAttr(xml, tag, attr) {
+  const m = xml.match(new RegExp(`<${tag}[^>]+${attr}="([^"]+)"`, 'i'));
+  return m ? m[1].trim() : '';
+}
+
+function parseItems(xml) {
+  const items = [];
+  const re = /<item>([\s\S]*?)<\/item>/gi;
+  let m;
+  while ((m = re.exec(xml)) !== null) {
+    items.push(m[1]);
+  }
+  return items;
+}
+
+function parseDate(raw) {
+  if (!raw) return null;
+  const d = new Date(raw);
+  if (isNaN(d)) return null;
+  return d.toISOString().slice(0, 10);
+}
+
+function extractImage(itemXml) {
+  // Try media:content first, then enclosure, then og:image in content
+  return (
+    extractAttr(itemXml, 'media:content', 'url') ||
+    extractAttr(itemXml, 'enclosure', 'url') ||
+    (() => {
+      const m = itemXml.match(/https?:\/\/[^\s"'<>]+\.(?:jpg|jpeg|png|webp)(?:\?[^\s"'<>]*)?/i);
+      return m ? m[0] : '';
+    })()
+  );
+}
+
+async function fetchRSS() {
+  const res = await fetch(RSS_URL, {
+    headers: { 'User-Agent': 'SneakerStock-Bot/1.0' }
   });
+  if (!res.ok) throw new Error(`RSS fetch failed: ${res.status} ${res.statusText}`);
+  return res.text();
 }
-
-function getPrices(sneaks, styleID) {
-  return new Promise(resolve => {
-    if (!styleID) return resolve(null);
-    sneaks.getProductPrices(styleID, (err, data) => {
-      if (err || !data) return resolve(null);
-      resolve(data);
-    });
-  });
-}
-
-function pickResale(prices, fallback) {
-  if (!prices || !prices.lowestResellPrice) return fallback;
-  const values = Object.values(prices.lowestResellPrice).filter(v => typeof v === 'number' && v > 0);
-  if (!values.length) return fallback;
-  return Math.min(...values);
-}
-
-// Target shape consumed by index.html
-// SHOE_SHAPE: { id, name, brand, releaseDate, retail, resale, prev, color, upcoming, image }
 
 async function main() {
-  console.log(`Fetching ${COUNT} popular sneakers via Sneaks-API...`);
-  const { sneaks, products } = await fetchFromSneaksAPI(COUNT);
-  if (!products.length) {
-    console.error('No products returned. Sneaks-API may be down. Keeping existing sneakers.json.');
+  console.log(`Fetching RSS from ${RSS_URL}...`);
+  const xml = await fetchRSS();
+
+  const items = parseItems(xml).slice(0, COUNT);
+  if (!items.length) {
+    console.error('No items found in RSS feed. Keeping existing sneakers.json.');
     process.exit(0);
   }
 
-  const out = [];
-  for (let i = 0; i < products.length; i++) {
-    const p = products[i];
-    const prices = FETCH_PRICES ? await getPrices(sneaks, p.styleID) : null;
+  console.log(`Parsed ${items.length} items from feed.`);
 
-    const retail = Math.max(1, parseInt(p.retailPrice, 10) || 150);
-    const resaleEstimate = retail * 1.35;
-    const resale = Math.round(pickResale(prices, resaleEstimate));
-    const prev = Math.round(resale * (0.92 + Math.random() * 0.16));
-    const brand = detectBrand(p.brand, p.shoeName);
-    const releaseDate = (p.releaseDate || '').slice(0, 10) || new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10);
-    const upcoming = new Date(releaseDate + 'T10:00:00').getTime() > Date.now();
-    const image = p.thumbnail || (Array.isArray(p.imageLinks) ? p.imageLinks[0] : '') || '';
+  const out = [];
+  for (let i = 0; i < items.length; i++) {
+    const item = items[i];
+    const name    = extractTag(item, 'title') || 'Unknown';
+    const pubDate = extractTag(item, 'pubDate') || extractTag(item, 'dc:date');
+    const image   = extractImage(item);
+
+    const brand       = detectBrand(name);
+    const retail      = RETAIL_ESTIMATES[brand] || 150;
+    const resale      = Math.round(retail * (1.3 + Math.random() * 0.3));
+    const prev        = Math.round(resale * (0.92 + Math.random() * 0.16));
+    const releaseDate = parseDate(pubDate) || new Date(Date.now() + (i + 1) * 3 * 86400000).toISOString().slice(0, 10);
+    const upcoming    = new Date(releaseDate + 'T10:00:00').getTime() > Date.now();
 
     out.push({
       id: i + 1,
-      name: p.shoeName || p.name || 'Unknown',
+      name,
       brand,
       releaseDate,
       retail,
       resale,
       prev,
-      color: COLORS[brand] || '#ff5a1f',
+      color: BRAND_COLORS[brand] || '#ff5a1f',
       upcoming,
       image
     });
