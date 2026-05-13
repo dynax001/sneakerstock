@@ -5,7 +5,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const RSS_URL = 'https://sneakernews.com/category/release-dates/feed/';
+const RSS_URL = 'https://www.kicksonfire.com/feed/';
 const COUNT = 20;
 const OUTPUT = path.join(__dirname, '..', 'sneakers.json');
 
