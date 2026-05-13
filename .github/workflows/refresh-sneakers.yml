@@ -27,11 +27,12 @@ jobs:
         run: |
           git config user.name "sneakerstock-bot"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin main
+          git rebase origin/main
           git add sneakers.json
           if git diff --staged --quiet; then
             echo "No changes to commit."
           else
             git commit -m "data: refresh sneakers.json"
-            git pull --rebase
             git push
           fi
