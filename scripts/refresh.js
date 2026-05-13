@@ -65,6 +65,22 @@ function parseDate(raw) {
   return d.toISOString().slice(0, 10);
 }
 
+// Try to pull a release date out of an article title, e.g. "Releasing May 17" or "Drops June 3, 2026"
+function extractReleaseDate(title) {
+  const MONTHS = 'January|February|March|April|May|June|July|August|September|October|November|December';
+  const re = new RegExp(`(${MONTHS})\\s+(\\d{1,2})(?:st|nd|rd|th)?(?:,?\\s*(\\d{4}))?`, 'i');
+  const m = title.match(re);
+  if (!m) return null;
+  const year = m[3] ? parseInt(m[3]) : new Date().getFullYear();
+  const d = new Date(`${m[1]} ${m[2]}, ${year}`);
+  if (isNaN(d)) return null;
+  // If the parsed date is more than 2 months in the past, bump to next year
+  if (d < new Date(Date.now() - 60 * 86400000)) {
+    d.setFullYear(d.getFullYear() + 1);
+  }
+  return d.toISOString().slice(0, 10);
+}
+
 function extractImage(itemXml) {
   // Try media:content first, then enclosure, then og:image in content
   return (
@@ -108,7 +124,7 @@ async function main() {
     const retail      = RETAIL_ESTIMATES[brand] || 150;
     const resale      = Math.round(retail * (1.3 + Math.random() * 0.3));
     const prev        = Math.round(resale * (0.92 + Math.random() * 0.16));
-    const releaseDate = parseDate(pubDate) || new Date(Date.now() + (i + 1) * 3 * 86400000).toISOString().slice(0, 10);
+    const releaseDate = extractReleaseDate(name) || parseDate(pubDate) || new Date(Date.now() + (i + 1) * 3 * 86400000).toISOString().slice(0, 10);
     const upcoming    = new Date(releaseDate + 'T10:00:00').getTime() > Date.now();
 
     out.push({
